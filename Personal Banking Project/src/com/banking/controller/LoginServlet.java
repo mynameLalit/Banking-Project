@@ -1,12 +1,21 @@
 package com.banking.controller;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.banking.customer.Customer;
+
+//import com.banking.customer.Customer;
 
 /**
  * Servlet implementation class LoginServlet
@@ -59,6 +68,36 @@ public class LoginServlet extends HttpServlet {
 		
 		if(lastname == null || lastname.equals("")) {
 			errorMsg = "Lastname can't be null or empty";
+		}
+		
+		if(errorMsg != null) {
+			RequestDispatcher rd = getServletContext().getRequestDispatcher("/login.html");
+			PrintWriter out = response.getWriter();
+			out.println("<font color=red" +errorMsg + "</font>");
+			rd.include(request,response);
+		}
+		
+		else {
+			Connection con = (Connection)getServletContext().getAttribute("DBConnection");
+			PreparedStatement ps = null;
+			ResultSet rs = null;
+			
+			try{
+				
+				ps = con.prepareStatement("select id, username, firstname, lastname from customers where username = ? and password = ?");
+				ps.setString(1, "username");
+				ps.setString(2, "password");
+				
+				rs = ps.executeQuery();
+				
+			if(rs != null && rs.next()) {
+				Customer customer = new Customer(rs.getString("firstname"), rs.getString("lastname"));
+				logger.info("User found with details = "+customer);
+				HttpSession session = request.getParameter("firstname");
+				session.setAttribute("Customer", customer);
+				response.sendRedirect("welocme.jsp");
+			}
+			}
 		}
 	}
 
